@@ -127,6 +127,11 @@ impl Luna {
             let final_context = self.build_context_snapshot();
             let prompt = self.build_prompt(&final_context);
 
+            // Sync last command to helper for !! expansion preview
+            if let Some(h) = rl.helper_mut() {
+                h.last_command = self.shell.context.state.last_command.clone();
+            }
+
             match rl.readline(&prompt) {
                 Ok(line) => {
                     let trimmed = line.trim();

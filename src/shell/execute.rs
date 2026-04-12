@@ -8,7 +8,28 @@ use std::time::Instant;
 
 impl Luna {
     pub fn execute_line(&mut self, line: &str) {
-        let expanded = self.expand_aliases(line);
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            return;
+        }
+
+        let mut expanded_line = line.to_string();
+        if expanded_line.contains("!!") {
+            let last_cmd = &self.shell.context.state.last_command;
+            if last_cmd.is_empty() {
+                eprintln!("luna: no previous command");
+                return;
+            }
+            expanded_line = expanded_line.replace("!!", last_cmd);
+        }
+
+        // Save last command BEFORE expanding aliases for the next !!
+        // But if it was a !! expansion, we save the expanded version
+        if !line.trim().is_empty() {
+            self.shell.context.state.last_command = expanded_line.clone();
+        }
+
+        let expanded = self.expand_aliases(&expanded_line);
 
         self.plugins.sync_env_from(&self.shell.context.env);
         self.plugins

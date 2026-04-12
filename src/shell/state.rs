@@ -26,6 +26,9 @@ pub struct LunaState {
     /// Signal to reload theme
     pub theme_dirty: bool,
 
+    /// The last command executed (for !! expansion).
+    pub last_command: String,
+
     /// Syntax highlighting resources
     pub syntax_set: syntect::parsing::SyntaxSet,
     pub theme_set: syntect::highlighting::ThemeSet,
@@ -44,6 +47,7 @@ impl LunaState {
             builtins: Vec::new(),
             theme_vars: HashMap::new(),
             theme_dirty: false,
+            last_command: String::new(),
             syntax_set: syntect::parsing::SyntaxSet::load_defaults_newlines(),
             theme_set: syntect::highlighting::ThemeSet::load_defaults(),
         }

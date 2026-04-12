@@ -17,6 +17,7 @@ pub struct LunaHelper {
     pub config: LunaConfig,
     pub aliases: HashMap<String, String>,
     pub highlighter: SyntaxHighlighter,
+    pub last_command: String,
 }
 
 impl LunaHelper {
@@ -32,6 +33,7 @@ impl LunaHelper {
             config,
             aliases,
             highlighter,
+            last_command: String::new(),
         }
     }
 
@@ -173,8 +175,25 @@ impl Completer for LunaHelper {
 impl Hinter for LunaHelper {
     type Hint = String;
     fn hint(&self, line: &str, _pos: usize, _ctx: &Context<'_>) -> Option<String> {
-        if !self.config.linter_errors_enabled() || line.trim().is_empty() {
+        let trimmed = line.trim();
+        if !self.config.linter_errors_enabled() || trimmed.is_empty() {
             return None;
+        }
+
+        let layout = self.config.linter_errors_layout();
+        let prefix = if layout == "down" { "\r\n" } else { "   " };
+
+        // 0. Check for !! expansion
+        if line.contains("!!") {
+            if self.last_command.is_empty() {
+                return Some(format!("{}\x1b[2;31m(no previous command)\x1b[0m", prefix));
+            } else {
+                let expanded = line.replace("!!", &self.last_command);
+                return Some(format!(
+                    "{}\x1b[2;32m(expands to: {})\x1b[0m",
+                    prefix, expanded
+                ));
+            }
         }
 
         let operators = ["&&", "||", "|", ";", ">>", ">", "<"];
