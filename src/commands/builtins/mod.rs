@@ -17,6 +17,7 @@ pub mod head;
 pub mod history;
 pub mod jq;
 pub mod ls;
+pub mod math;
 pub mod mkdir;
 pub mod mv;
 pub mod next;

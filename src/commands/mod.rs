@@ -64,6 +64,7 @@ pub fn register_all(shell: &mut Shell<LunaState>) -> Arc<Registry> {
         Arc::new(builtins::history::HistoryCommand),
         Arc::new(builtins::jq::JqCommand),
         Arc::new(builtins::ls::LsCommand),
+        Arc::new(builtins::math::MathCommand),
         Arc::new(builtins::mkdir::MkdirCommand),
         Arc::new(builtins::has::HasCommand),
         Arc::new(builtins::mv::MvCommand),
