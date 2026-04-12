@@ -2,6 +2,7 @@ pub mod alias;
 pub mod back;
 pub mod cat;
 pub mod cd;
+pub mod cdi;
 pub mod clear;
 pub mod cp;
 pub mod cut;

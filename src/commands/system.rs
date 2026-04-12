@@ -1,5 +1,6 @@
 use crate::shell::config::LunaConfig;
 use crate::shell::state::LunaState;
+use indexmap::IndexMap;
 use shellframe::{Context, Output};
 use std::collections::HashMap;
 
@@ -171,13 +172,13 @@ pub trait BuiltinCommand: Send + Sync {
 }
 
 pub struct Registry {
-    pub commands: HashMap<String, std::sync::Arc<dyn BuiltinCommand>>,
+    pub commands: IndexMap<String, std::sync::Arc<dyn BuiltinCommand>>,
 }
 
 impl Registry {
     pub fn new() -> Self {
         Self {
-            commands: HashMap::new(),
+            commands: IndexMap::new(),
         }
     }
 

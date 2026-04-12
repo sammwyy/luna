@@ -50,6 +50,7 @@ pub fn register_all(shell: &mut Shell<LunaState>) -> Arc<Registry> {
         Arc::new(builtins::back::BackCommand),
         Arc::new(builtins::cat::CatCommand),
         Arc::new(builtins::cd::CdCommand),
+        Arc::new(builtins::cdi::CdiCommand),
         Arc::new(builtins::clear::ClearCommand),
         Arc::new(builtins::cp::CpCommand),
         Arc::new(builtins::cut::CutCommand),
@@ -92,7 +93,10 @@ pub fn register_all(shell: &mut Shell<LunaState>) -> Arc<Registry> {
     let help_main = {
         let mut text = String::new();
         text.push_str("<color_primary><bold>luna built-in commands:</bold></color_primary>\n");
-        for (name, cmd) in &registry.commands {
+        let mut names: Vec<_> = registry.commands.keys().cloned().collect();
+        names.sort();
+        for name in names {
+            let cmd = registry.commands.get(&name).unwrap();
             text.push_str(&format!(
                 "  <color_secondary>{:<10}</color_secondary> <color_text>{}</color_text>\n",
                 name,
@@ -148,7 +152,7 @@ pub fn register_all(shell: &mut Shell<LunaState>) -> Arc<Registry> {
 
             let cmd_name = cmd_clone.name();
             let always_expand = [
-                "mkdir", "rmdir", "touch", "cat", "cp", "mv", "rm", "file", "ls",
+                "mkdir", "rmdir", "touch", "cat", "cp", "mv", "rm", "file", "ls", "cdi",
             ];
 
             if ctx.state.config.universal_multi_file_parsing() || always_expand.contains(&cmd_name)
