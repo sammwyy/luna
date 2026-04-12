@@ -1,5 +1,6 @@
 mod commands;
 mod lua;
+mod platform;
 mod renderer;
 mod setup;
 pub mod shell;

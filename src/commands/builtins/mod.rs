@@ -11,6 +11,7 @@ pub mod exit;
 pub mod file;
 pub mod find;
 pub mod grep;
+pub mod has;
 pub mod head;
 pub mod history;
 pub mod jq;

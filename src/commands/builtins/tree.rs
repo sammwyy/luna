@@ -27,17 +27,26 @@ impl BuiltinCommand for TreeCommand {
             args.positionals[0].clone()
         };
 
-        let mut out = String::new();
+        let mut stats_files = 0;
+        let mut stats_dirs = 0;
+
         let target_path = PathBuf::from(&target);
-        out.push_str(&format!(
+        let header = format!(
             "<color_primary><bold>{}</bold></color_primary>\n",
             target_path
                 .file_name()
                 .map(|n| n.to_string_lossy())
                 .unwrap_or(target.into())
-        ));
+        );
+        crate::renderer::print_stdout(&header);
 
-        fn visit_dirs(dir: &PathBuf, prefix: &str, out: &mut String, depth: usize) {
+        fn visit_dirs(
+            dir: &PathBuf,
+            prefix: &str,
+            depth: usize,
+            stats_f: &mut usize,
+            stats_d: &mut usize,
+        ) {
             if depth > 10 {
                 return;
             } // Safety depth
@@ -63,15 +72,18 @@ impl BuiltinCommand for TreeCommand {
                     let is_dir = entry.path().is_dir();
 
                     let styled_name = if is_dir {
+                        *stats_d += 1;
                         format!("<color_secondary>{name}/</color_secondary>")
                     } else {
+                        *stats_f += 1;
                         format!("<color_text>{name}</color_text>")
                     };
 
-                    out.push_str(&format!(
+                    let msg = format!(
                         "<color_border>{}</color_border><color_border>{}</color_border>{}\n",
                         prefix, marker, styled_name
-                    ));
+                    );
+                    crate::renderer::print_stdout(&msg);
 
                     if is_dir {
                         let next_prefix = if is_last {
@@ -79,14 +91,21 @@ impl BuiltinCommand for TreeCommand {
                         } else {
                             format!("{}│   ", prefix)
                         };
-                        visit_dirs(&entry.path(), &next_prefix, out, depth + 1);
+                        visit_dirs(&entry.path(), &next_prefix, depth + 1, stats_f, stats_d);
                     }
                 }
             }
         }
 
-        visit_dirs(&target_path, "", &mut out, 0);
-        Ok(Output::success(out))
+        visit_dirs(&target_path, "", 0, &mut stats_files, &mut stats_dirs);
+
+        let stats_msg = format!(
+            "\n<color_secondary>{} directories, {} files</color_secondary>\n",
+            stats_dirs, stats_files
+        );
+        crate::renderer::print_stdout(&stats_msg);
+
+        Ok(Output::success("".into()))
     }
 
     fn dry_run(&self, _config: &LunaConfig, args: &ParsedArgs) -> Result<(), String> {

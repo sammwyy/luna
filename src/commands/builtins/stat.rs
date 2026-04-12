@@ -1,9 +1,9 @@
 use crate::commands::system::{BuiltinCommand, ParsedArgs};
+use crate::platform::{CurrentPlatform, Platform};
 use crate::shell::state::LunaState;
 use shellframe::Context;
 use shellframe::Output;
 use std::fs;
-use std::os::unix::fs::MetadataExt;
 use std::time::UNIX_EPOCH;
 
 pub struct StatCommand;
@@ -33,23 +33,25 @@ impl BuiltinCommand for StatCommand {
         for file in &args.positionals {
             match fs::metadata(file) {
                 Ok(m) => {
-                    let size = m.size();
-                    let blocks = m.blocks();
-                    let ino = m.ino();
-                    let mode = format!("{:o}", m.mode() & 0o777); // Extract unix permissions mode
-                    let uid = m.uid();
-                    let gid = m.gid();
+                    let info = CurrentPlatform::get_file_metadata(&m);
+                    let size = info.size;
+                    let blocks = info.blocks;
+                    let ino = info.ino;
+                    let mode = info.mode;
+                    let uid = info.uid;
+                    let gid = info.gid;
+
                     let atime = m
                         .accessed()
                         .unwrap_or(UNIX_EPOCH)
                         .duration_since(UNIX_EPOCH)
-                        .unwrap()
+                        .unwrap_or_default()
                         .as_secs();
                     let mtime = m
                         .modified()
                         .unwrap_or(UNIX_EPOCH)
                         .duration_since(UNIX_EPOCH)
-                        .unwrap()
+                        .unwrap_or_default()
                         .as_secs();
 
                     out.push_str(&format!(

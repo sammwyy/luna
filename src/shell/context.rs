@@ -1,3 +1,4 @@
+use crate::platform::{CurrentPlatform, Platform};
 use indexmap::IndexMap;
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -52,10 +53,9 @@ impl ShellContext {
             cwd.to_string()
         };
 
-        let cwd_short = cwd
-            .split('/')
-            .filter(|s| !s.is_empty())
-            .last()
+        let cwd_short = std::path::Path::new(cwd)
+            .file_name()
+            .and_then(|s| s.to_str())
             .unwrap_or(cwd)
             .to_string();
 
@@ -65,9 +65,7 @@ impl ShellContext {
             .cloned()
             .unwrap_or_else(|| "user".to_string());
 
-        let hostname = std::fs::read_to_string("/proc/sys/kernel/hostname")
-            .map(|s| s.trim().to_string())
-            .unwrap_or_else(|_| "localhost".to_string());
+        let hostname = CurrentPlatform::get_hostname();
 
         Self {
             last_exit_code,
@@ -105,14 +103,7 @@ fn local_time() -> (u32, u32, u32, u32, u32, u32) {
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs();
-    let offset_secs: i64 = unsafe {
-        extern "C" {
-            static timezone: i64;
-            fn tzset();
-        }
-        tzset();
-        -timezone
-    };
+    let offset_secs = CurrentPlatform::get_timezone_offset();
     let local_secs = (secs as i64 + offset_secs).max(0) as u64;
     let days = local_secs / 86400;
     let tod = local_secs % 86400;
