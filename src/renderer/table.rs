@@ -3,6 +3,7 @@ use crate::renderer::markup;
 pub struct Table {
     pub headers: Vec<String>,
     pub rows: Vec<Vec<String>>,
+    pub alternating_rows: bool,
 }
 
 impl Table {
@@ -10,6 +11,7 @@ impl Table {
         Self {
             headers,
             rows: Vec::new(),
+            alternating_rows: false,
         }
     }
 
@@ -77,7 +79,13 @@ impl Table {
         }
 
         // Render rows
-        for row in &self.rows {
+        for (idx, row) in self.rows.iter().enumerate() {
+            let use_bg = self.alternating_rows && idx % 2 == 1;
+            if use_bg {
+                // Subtle alternating background (dark enough for most terminal themes)
+                out.push_str("<bg:#1e1e2e>");
+            }
+
             for (i, cell) in row.iter().enumerate() {
                 if i < num_cols {
                     let plain = markup::strip_ansi(cell);
@@ -90,6 +98,10 @@ impl Table {
                         out.push_str("  ");
                     }
                 }
+            }
+
+            if use_bg {
+                out.push_str("</bg>");
             }
             out.push('\n');
         }

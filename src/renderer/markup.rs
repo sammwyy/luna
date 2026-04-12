@@ -198,7 +198,7 @@ fn parse_tag(inner: &str) -> Option<Token> {
         if name.eq_ignore_ascii_case("color") || name.eq_ignore_ascii_case("colour") {
             return Some(Token::CloseTag(CloseKind::Color));
         }
-        if name.starts_with("bg:") || name.starts_with("bg/") {
+        if name.starts_with("bg:") || name.starts_with("bg/") || name.eq_ignore_ascii_case("bg") {
             return Some(Token::CloseTag(CloseKind::Bg));
         }
         return Some(Token::CloseTag(CloseKind::Named(name.to_string())));

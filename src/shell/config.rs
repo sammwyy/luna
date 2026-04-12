@@ -56,6 +56,7 @@ pub struct CatConfig {
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct LsConfig {
     pub render_table: Option<bool>,
+    pub alternating_rows: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Default, Clone)]
@@ -336,6 +337,14 @@ impl LunaConfig {
             .as_ref()
             .and_then(|b| b.ls.as_ref())
             .and_then(|l| l.render_table)
+            .unwrap_or(true)
+    }
+
+    pub fn ls_alternating_rows(&self) -> bool {
+        self.builtin
+            .as_ref()
+            .and_then(|b| b.ls.as_ref())
+            .and_then(|l| l.alternating_rows)
             .unwrap_or(true)
     }
 
