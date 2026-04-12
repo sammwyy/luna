@@ -1,0 +1,123 @@
+# luna configuration
+inherit_system_env = true # inherit environment variables from the system
+run_lunarc = true         # run .luna/lunarc as source script
+
+# Use the lua theme (~/.luna/themes/default.lua)
+theme = "default"
+
+# Universal Multi-file Parsing
+universal_multi_file_parsing = false # if true, expands {}, *, ?, [] in arguments for ALL commands
+
+# Command correction settings
+[corrector]
+enabled = true
+min_length = 0   # minimum length of the command to be corrected
+max_length = 999 # maximum length of the command to be corrected
+builtins = true  # correct built-in commands
+system = true    # correct system commands
+
+# Real-time error messages and hints
+[linter.errors]
+enabled = true
+layout = "right" # "right" or "down"
+commands = true  # show errors for commands
+flags = true     # show errors for flags
+
+# Real-time syntax highlighting
+[linter.commands]
+highlight = true # enable syntax highlighting
+enabled = true
+commands = true  # highlight commands
+flags = true     # highlight flags
+strings = true   # highlight strings
+number = true    # highlight numbers
+boolean = true   # highlight booleans
+
+# Tab completion settings
+[tabcomplete]
+enabled = true
+files = true    # enable file completion
+commands = true # enable command completion
+flags = true    # enable flag completion
+
+
+# Built-in commands global settings
+[builtin]
+enabled = true # enable or disable all built-in commands
+blocked = []   # commands in this list will not be registered
+allowed = []   # if not empty, only these commands will be registered
+
+# Specific configuration for ls
+[builtin.ls]
+render_table = true # use rich table view or compact list view
+
+# Specific configuration for cd
+[builtin.cd]
+home_default = true # if true, cd without args goes to HOME, else goes to /
+
+# Specific configuration for head
+[builtin.head]
+lines = 10 # default number of lines to show
+
+# Specific configuration for tail
+[builtin.tail]
+lines = 10 # default number of lines to show
+
+# Specific configuration for cat
+[builtin.cat]
+highlight_exts = [
+    "rs",
+    "py",
+    "js",
+    "ts",
+    "lua",
+    "toml",
+    "c",
+    "cpp",
+    "h",
+    "hpp",
+    "md",
+    "tsx",
+    "jsx",
+    "html",
+    "css",
+    "scss",
+    "sass",
+    "less",
+    "styl",
+    "stylus",
+    "php",
+    "rb",
+    "go",
+    "java",
+    "kt",
+    "kts",
+    "swift",
+    "rs",
+    "py",
+    "js",
+    "ts",
+    "lua",
+    "toml",
+    "c",
+    "cpp",
+    "h",
+    "hpp",
+    "md",
+    "tsx",
+    "jsx",
+    "html",
+    "css",
+    "scss",
+    "sass",
+    "less",
+    "styl",
+    "stylus",
+    "php",
+    "rb",
+    "go",
+    "java",
+    "kt",
+    "kts",
+    "swift",
+]
