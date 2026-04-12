@@ -64,8 +64,8 @@ impl BuiltinCommand for WcCommand {
         let mut count_lines = args.get_bool("lines");
         let mut count_words = args.get_bool("words");
         let mut count_bytes = args.get_bool("bytes");
-        let mut count_chars = args.get_bool("chars");
-        let mut count_max_line = args.get_bool("max-line-length");
+        let count_chars = args.get_bool("chars");
+        let count_max_line = args.get_bool("max-line-length");
 
         if !count_lines && !count_words && !count_bytes && !count_chars && !count_max_line {
             count_lines = true;

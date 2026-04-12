@@ -122,7 +122,7 @@ pub fn register_all(shell: &mut Shell<LunaState>) -> Arc<Registry> {
                     system::FlagType::Enum(v) => format!("ENUM {:?}", v),
                 };
                 detail.push_str(&format!(
-                    "  {}--{} <<#9ca3af>{}</#9ca3af>>    <color_text>{}</color_text>\n",
+                    "  {}--{} [<#9ca3af>{}</color>]    <color_text>{}</color_text>\n",
                     short, f.name, ftype, f.desc
                 ));
             }
