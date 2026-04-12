@@ -32,5 +32,6 @@ pub mod theme;
 pub mod touch;
 pub mod tree;
 pub mod uniq;
+pub mod view;
 pub mod wc;
 pub mod which;

@@ -80,6 +80,7 @@ pub fn register_all(shell: &mut Shell<LunaState>) -> Arc<Registry> {
         Arc::new(builtins::tree::TreeCommand),
         Arc::new(builtins::theme::ThemeCommand),
         Arc::new(builtins::uniq::UniqCommand),
+        Arc::new(builtins::view::ViewCommand),
         Arc::new(builtins::wc::WcCommand),
         Arc::new(builtins::which::WhichCommand),
     ];
@@ -152,7 +153,7 @@ pub fn register_all(shell: &mut Shell<LunaState>) -> Arc<Registry> {
 
             let cmd_name = cmd_clone.name();
             let always_expand = [
-                "mkdir", "rmdir", "touch", "cat", "cp", "mv", "rm", "file", "ls", "cdi",
+                "mkdir", "rmdir", "touch", "cat", "cp", "mv", "rm", "file", "ls", "cdi", "view",
             ];
 
             if ctx.state.config.universal_multi_file_parsing() || always_expand.contains(&cmd_name)
