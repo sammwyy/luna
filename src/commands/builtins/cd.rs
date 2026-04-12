@@ -1,4 +1,4 @@
-use crate::commands::system::{BuiltinCommand, ParsedArgs};
+use crate::commands::system::{BuiltinCommand, FlagDef, FlagType, ParsedArgs};
 use crate::shell::config::LunaConfig;
 use crate::shell::state::LunaState;
 use shellframe::Context;
@@ -11,9 +11,30 @@ impl BuiltinCommand for CdCommand {
     fn name(&self) -> &'static str {
         "cd"
     }
+
     fn desc(&self) -> &'static str {
         "Change the current directory"
     }
+
+    fn flags(&self) -> Vec<FlagDef> {
+        vec![
+            FlagDef {
+                name: "logical",
+                short: Some('L'),
+                desc: "use logical path structure",
+                flag_type: FlagType::Bool,
+                required: false,
+            },
+            FlagDef {
+                name: "physical",
+                short: Some('P'),
+                desc: "use physical path structure",
+                flag_type: FlagType::Bool,
+                required: false,
+            },
+        ]
+    }
+
     fn run(
         &self,
         ctx: &mut Context<LunaState>,
@@ -26,15 +47,25 @@ impl BuiltinCommand for CdCommand {
             "/".to_string()
         };
 
-        let target = args
-            .positionals
-            .first()
-            .cloned()
-            .unwrap_or_else(|| default_dir);
+        let arg = args.positionals.first().cloned();
+
+        let target = match arg.as_deref() {
+            Some("-") => {
+                let prev = ctx.state.prev_cwd.clone();
+                println!("{}", prev); // Bash prints the new directory when using 'cd -'
+                prev
+            }
+            Some(t) => t.to_string(),
+            None => default_dir,
+        };
+
+        let old_cwd = ctx.get_cwd().to_string();
 
         if env::set_current_dir(&target).is_ok() {
             if let Ok(new_cwd) = env::current_dir() {
-                ctx.set_cwd(new_cwd.to_string_lossy().to_string());
+                let new_cwd_str = new_cwd.to_string_lossy().to_string();
+                ctx.set_cwd(new_cwd_str.clone());
+                ctx.state.prev_cwd = old_cwd;
             }
             Ok(Output::success("".into()))
         } else {
@@ -56,11 +87,13 @@ impl BuiltinCommand for CdCommand {
             "/".to_string()
         };
 
-        let target = args
-            .positionals
-            .first()
-            .cloned()
-            .unwrap_or_else(|| default_dir);
+        let arg = args.positionals.first().cloned();
+        let target = match arg.as_deref() {
+            Some("-") => return Ok(()), // Assume it works for dry run
+            // We don't have access to LunaState here easily, so we just return Ok
+            Some(t) => t.to_string(),
+            None => default_dir,
+        };
 
         if std::path::Path::new(&target).exists() {
             Ok(())

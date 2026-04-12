@@ -16,14 +16,24 @@ impl BuiltinCommand for MkdirCommand {
         "Create directories"
     }
     fn flags(&self) -> Vec<FlagDef> {
-        vec![FlagDef {
-            name: "parents",
-            short: Some('p'),
-            desc: "Create parent directories as needed",
-            flag_type: FlagType::Bool,
-            required: false,
-        }]
+        vec![
+            FlagDef {
+                name: "parents",
+                short: Some('p'),
+                desc: "Create parent directories as needed",
+                flag_type: FlagType::Bool,
+                required: false,
+            },
+            FlagDef {
+                name: "verbose",
+                short: Some('v'),
+                desc: "Print a message for each created directory",
+                flag_type: FlagType::Bool,
+                required: false,
+            },
+        ]
     }
+
     fn run(
         &self,
         ctx: &mut Context<LunaState>,
@@ -31,6 +41,8 @@ impl BuiltinCommand for MkdirCommand {
         _stdin: &str,
     ) -> anyhow::Result<Output> {
         let parents = args.get_bool("parents");
+        let verbose = args.get_bool("verbose");
+        let mut out = String::new();
 
         if args.positionals.is_empty() {
             return Ok(Output::error(
@@ -43,19 +55,21 @@ impl BuiltinCommand for MkdirCommand {
         for dir in &args.positionals {
             let path = PathBuf::from(ctx.get_cwd()).join(dir);
             let res = if parents {
-                fs::create_dir_all(path)
+                fs::create_dir_all(&path)
             } else {
-                fs::create_dir(path)
+                fs::create_dir(&path)
             };
             if let Err(e) = res {
                 return Ok(Output::error(
                     1,
-                    "".into(),
+                    out,
                     format!("mkdir: cannot create directory '{}': {}\n", dir, e),
                 ));
+            } else if verbose {
+                out.push_str(&format!("mkdir: created directory '{}'\n", dir));
             }
         }
-        Ok(Output::success("".into()))
+        Ok(Output::success(out))
     }
 
     fn dry_run(&self, _config: &LunaConfig, args: &ParsedArgs) -> Result<(), String> {

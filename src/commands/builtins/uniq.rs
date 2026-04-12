@@ -10,9 +10,11 @@ impl BuiltinCommand for UniqCommand {
     fn name(&self) -> &'static str {
         "uniq"
     }
+
     fn desc(&self) -> &'static str {
         "Report or omit repeated lines"
     }
+
     fn flags(&self) -> Vec<FlagDef> {
         vec![
             FlagDef {
@@ -36,8 +38,16 @@ impl BuiltinCommand for UniqCommand {
                 flag_type: FlagType::Bool,
                 required: false,
             },
+            FlagDef {
+                name: "ignore-case",
+                short: Some('i'),
+                desc: "ignore differences in case when comparing",
+                flag_type: FlagType::Bool,
+                required: false,
+            },
         ]
     }
+
     fn run(
         &self,
         _ctx: &mut Context<LunaState>,
@@ -57,6 +67,7 @@ impl BuiltinCommand for UniqCommand {
         let count = args.get_bool("count");
         let duplicates_only = args.get_bool("repeated");
         let unique_only = args.get_bool("unique");
+        let ignore_case = args.get_bool("ignore-case");
 
         let mut out = String::new();
         let lines: Vec<&str> = text.lines().collect();
@@ -65,8 +76,19 @@ impl BuiltinCommand for UniqCommand {
         while i < lines.len() {
             let current = lines[i];
             let mut run_count = 1usize;
-            while i + run_count < lines.len() && lines[i + run_count] == current {
-                run_count += 1;
+            while i + run_count < lines.len() {
+                let next = lines[i + run_count];
+                let is_same = if ignore_case {
+                    current.to_lowercase() == next.to_lowercase()
+                } else {
+                    current == next
+                };
+
+                if is_same {
+                    run_count += 1;
+                } else {
+                    break;
+                }
             }
 
             let should_print = match (duplicates_only, unique_only) {
