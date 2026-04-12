@@ -11,7 +11,7 @@ pub fn setup_shell_handlers(shell: &mut shellframe::Shell<LunaState>) {
         cmd.envs(&context.env);
         cmd.current_dir(context.get_cwd());
 
-        if !_stdin.is_empty() {
+        let result = if !_stdin.is_empty() {
             cmd.stdin(std::process::Stdio::piped());
             cmd.stdout(std::process::Stdio::piped());
             cmd.stderr(std::process::Stdio::piped());
@@ -27,44 +27,31 @@ pub fn setup_shell_handlers(shell: &mut shellframe::Shell<LunaState>) {
                 use std::io::Write;
                 let _ = child_stdin.write_all(_stdin.as_bytes());
             }
-            let output = match child.wait_with_output() {
-                Ok(out) => out,
-                Err(e) => {
-                    return Ok(Output::error(
-                        127,
-                        "".into(),
-                        format!("luna: {name}: {e}\n"),
-                    ))
-                }
-            };
-            Ok(Output::new(
-                output.status.code().unwrap_or(0),
-                String::from_utf8_lossy(&output.stdout).to_string(),
-                String::from_utf8_lossy(&output.stderr).to_string(),
-            ))
+            child.wait_with_output()
         } else {
-            let mut child = match cmd.spawn() {
+            cmd.stdout(std::process::Stdio::piped());
+            cmd.stderr(std::process::Stdio::piped());
+            let child = match cmd.spawn() {
                 Ok(c) => c,
                 Err(e) => {
                     let msg = format!("luna: {name}: {e}\n");
                     return Ok(Output::error(127, "".into(), msg));
                 }
             };
-            let status = match child.wait() {
-                Ok(s) => s,
-                Err(e) => {
-                    return Ok(Output::error(
-                        127,
-                        "".into(),
-                        format!("luna: {name}: {e}\n"),
-                    ))
-                }
-            };
-            Ok(Output::new(
-                status.code().unwrap_or(0),
-                String::new(),
-                String::new(),
-            ))
+            child.wait_with_output()
+        };
+
+        match result {
+            Ok(output) => Ok(Output::new(
+                output.status.code().unwrap_or(0),
+                String::from_utf8_lossy(&output.stdout).to_string(),
+                String::from_utf8_lossy(&output.stderr).to_string(),
+            )),
+            Err(e) => Ok(Output::error(
+                127,
+                "".into(),
+                format!("luna: {name}: {e}\n"),
+            )),
         }
     });
 

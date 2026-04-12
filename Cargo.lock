@@ -973,7 +973,7 @@ dependencies = [
 [[package]]
 name = "shellframe"
 version = "0.1.0"
-source = "git+https://github.com/sammwyy/shellframe?branch=main#7047a7b07523f775966da61af5aa466d946444b2"
+source = "git+https://github.com/sammwyy/shellframe?branch=main#41b2fc493ad4e6ac3f1d8d33d12ae486da442f33"
 dependencies = [
  "anyhow",
  "indexmap",
