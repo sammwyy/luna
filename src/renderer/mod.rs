@@ -25,7 +25,7 @@ pub fn print_stderr(content: &str) {
     let _ = std::io::stderr().flush();
 }
 
-pub fn println_stdout(content: &str) {
+pub fn _println_stdout(content: &str) {
     let mut rendered = text::render_ansi(content);
     if !rendered.ends_with('\n') {
         rendered.push('\n');

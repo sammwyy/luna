@@ -190,7 +190,7 @@ dependencies = [
  "libc",
  "mio 0.8.11",
  "parking_lot",
- "signal-hook",
+ "signal-hook 0.3.18",
  "signal-hook-mio",
  "winapi",
 ]
@@ -533,12 +533,14 @@ dependencies = [
  "crossterm",
  "glob",
  "indexmap",
+ "libc",
  "meval",
  "mlua",
  "rustyline",
  "serde",
  "serde_derive",
  "shellframe",
+ "signal-hook 0.4.4",
  "strsim",
  "syntect",
  "tokio",
@@ -991,7 +993,7 @@ dependencies = [
 [[package]]
 name = "shellframe"
 version = "0.1.0"
-source = "git+https://github.com/sammwyy/shellframe?branch=main#41b2fc493ad4e6ac3f1d8d33d12ae486da442f33"
+source = "git+https://github.com/sammwyy/shellframe?branch=main#4882af9e9a6e079a369b2bd4436ce2c59f009c92"
 dependencies = [
  "anyhow",
  "indexmap",
@@ -1016,6 +1018,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "signal-hook"
+version = "0.4.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b2a0c28ca5908dbdbcd52e6fdaa00358ab88637f8ab33e1f188dd510eb44b53d"
+dependencies = [
+ "libc",
+ "signal-hook-registry",
+]
+
+[[package]]
 name = "signal-hook-mio"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1023,7 +1035,7 @@ checksum = "b75a19a7a740b25bc7944bdee6172368f988763b744e3d4dfe753f6b4ece40cc"
 dependencies = [
  "libc",
  "mio 0.8.11",
- "signal-hook",
+ "signal-hook 0.3.18",
 ]
 
 [[package]]

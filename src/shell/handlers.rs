@@ -11,8 +11,10 @@ pub fn setup_shell_handlers(shell: &mut shellframe::Shell<LunaState>) {
         cmd.envs(&context.env);
         cmd.current_dir(context.get_cwd());
 
-        let result = if !_stdin.is_empty() {
-            cmd.stdin(std::process::Stdio::piped());
+        let result = if context.capture || !_stdin.is_empty() {
+            if !_stdin.is_empty() {
+                cmd.stdin(std::process::Stdio::piped());
+            }
             cmd.stdout(std::process::Stdio::piped());
             cmd.stderr(std::process::Stdio::piped());
 
@@ -29,16 +31,34 @@ pub fn setup_shell_handlers(shell: &mut shellframe::Shell<LunaState>) {
             }
             child.wait_with_output()
         } else {
-            cmd.stdout(std::process::Stdio::piped());
-            cmd.stderr(std::process::Stdio::piped());
-            let child = match cmd.spawn() {
-                Ok(c) => c,
+            // TUI and Direct Execution mode
+            // Ignore signals in the parent so they only affect the child process
+            let old_int = unsafe { libc::signal(libc::SIGINT, libc::SIG_IGN) };
+            let old_quit = unsafe { libc::signal(libc::SIGQUIT, libc::SIG_IGN) };
+            let old_tstp = unsafe { libc::signal(libc::SIGTSTP, libc::SIG_IGN) };
+            let old_ttin = unsafe { libc::signal(libc::SIGTTIN, libc::SIG_IGN) };
+            let old_ttou = unsafe { libc::signal(libc::SIGTTOU, libc::SIG_IGN) };
+
+            let status = cmd.status();
+
+            // Restore signal handlers
+            unsafe {
+                libc::signal(libc::SIGINT, old_int);
+                libc::signal(libc::SIGQUIT, old_quit);
+                libc::signal(libc::SIGTSTP, old_tstp);
+                libc::signal(libc::SIGTTIN, old_ttin);
+                libc::signal(libc::SIGTTOU, old_ttou);
+            }
+
+            match status {
+                Ok(s) => {
+                    return Ok(Output::new(s.code().unwrap_or(0), "".into(), "".into()));
+                }
                 Err(e) => {
                     let msg = format!("luna: {name}: {e}\n");
                     return Ok(Output::error(127, "".into(), msg));
                 }
-            };
-            child.wait_with_output()
+            }
         };
 
         match result {

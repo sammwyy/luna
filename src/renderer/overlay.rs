@@ -57,15 +57,16 @@ impl OverlayComponent for SuggestionBox {
         let width = max_item_len + 4;
 
         let mut out = String::new();
-        out.push('\n');
+        out.push_str("\r\n");
 
-        // Top
         let mut box_markup = String::new();
+
+        // Top line
         box_markup.push_str("<color_border>┌");
         for _ in 0..width {
             box_markup.push('─');
         }
-        box_markup.push_str("┐</color_border>\n");
+        box_markup.push_str("┐</color_border>\r\n");
 
         for item in &self.items {
             box_markup.push_str("<color_border>│</color_border> ");
@@ -76,10 +77,10 @@ impl OverlayComponent for SuggestionBox {
             for _ in 0..padding {
                 box_markup.push(' ');
             }
-            box_markup.push_str("<color_border>│</color_border>\n");
+            box_markup.push_str("<color_border>│</color_border>\r\n");
         }
 
-        // Bottom
+        // Bottom line
         box_markup.push_str("<color_border>└");
         for _ in 0..width {
             box_markup.push('─');
@@ -134,19 +135,25 @@ impl OverlayManager {
         let ctx = OverlayContext::new(line);
         let mut out = String::new();
 
-        // 1. Render all inline components
+        // 1. Render all inline components normally
         for comp in &self.components {
             if let OverlayPosition::Inline = comp.position() {
                 out.push_str(&comp.render(&ctx));
             }
         }
 
-        // 2. Render all block components
+        // 2. Render all block components inside a zero-width ghost block
+        let mut block_out = String::new();
         for comp in &self.components {
             if let OverlayPosition::Block = comp.position() {
-                out.push_str(&comp.render(&ctx));
+                block_out.push_str(&comp.render(&ctx));
             }
         }
+
+        // Always save, clear, draw blocks, restore to prevent hint ghosting
+        out.push_str("\x1b[s\x1b[J");
+        out.push_str(&block_out);
+        out.push_str("\x1b[u");
 
         out
     }

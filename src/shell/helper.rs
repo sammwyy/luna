@@ -349,18 +349,13 @@ impl Hinter for LunaHelper {
     type Hint = String;
 
     fn hint(&self, line: &str, _pos: usize, _ctx: &Context<'_>) -> Option<String> {
-        if !self.config.linter_errors_enabled() || line.is_empty() {
-            return None;
-        }
-
         let mut manager = crate::renderer::overlay::OverlayManager::new();
-        let comps = self.get_overlay_components(line);
-        if comps.is_empty() {
-            return None;
-        }
 
-        for comp in comps {
-            manager.add(comp);
+        if self.config.linter_errors_enabled() && !line.is_empty() {
+            let comps = self.get_overlay_components(line);
+            for comp in comps {
+                manager.add(comp);
+            }
         }
 
         Some(manager.render_all(line))

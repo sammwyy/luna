@@ -134,6 +134,12 @@ impl Luna {
 
             match rl.readline(&prompt) {
                 Ok(line) => {
+                    use crossterm::cursor::MoveToColumn;
+                    use crossterm::terminal::{Clear, ClearType};
+                    use std::io::Write;
+                    print!("{}{}", MoveToColumn(0), Clear(ClearType::FromCursorDown));
+                    let _ = std::io::stdout().flush();
+
                     let trimmed = line.trim();
                     if trimmed.is_empty() {
                         continue;

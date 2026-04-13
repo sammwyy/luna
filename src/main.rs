@@ -5,11 +5,16 @@ mod renderer;
 mod setup;
 pub mod shell;
 
-use crate::shell::Luna;
+use crate::{
+    platform::{CurrentPlatform, Platform},
+    shell::Luna,
+};
 use anyhow::Result;
 use std::env;
 
 fn main() -> Result<()> {
+    CurrentPlatform::setup_terminal()?;
+
     let args: Vec<String> = env::args().collect();
     let mut execute_command: Option<String> = None;
 
