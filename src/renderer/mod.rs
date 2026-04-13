@@ -2,6 +2,7 @@ pub mod error;
 pub mod highlight;
 pub mod markup;
 pub mod menu;
+pub mod overlay;
 pub mod prompt;
 pub mod table;
 

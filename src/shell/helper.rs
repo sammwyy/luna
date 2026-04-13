@@ -1,7 +1,6 @@
 use crate::commands::system::{FlagType, Registry};
 use crate::renderer::highlight::SyntaxHighlighter;
 use crate::shell::config::LunaConfig;
-use crate::shell::utils::suggest_commands;
 use rustyline::completion::{Completer, FilenameCompleter, Pair};
 use rustyline::highlight::Highlighter;
 use rustyline::hint::Hinter;
@@ -51,6 +50,180 @@ impl LunaHelper {
             return true;
         }
         false
+    }
+
+    fn get_suggestions(&self, line: &str) -> Vec<String> {
+        let words: Vec<&str> = line.split_whitespace().collect();
+        let is_completing_word = !line.is_empty() && !line.ends_with(char::is_whitespace);
+
+        let mut suggestions = Vec::new();
+
+        if (words.len() <= 1 && is_completing_word) || words.is_empty() {
+            if self.config.suggestions_commands() {
+                let search = words.first().unwrap_or(&"");
+                // Builtins
+                for name in self.registry.commands.keys() {
+                    if name.starts_with(search) {
+                        suggestions.push(name.clone());
+                    }
+                }
+                // Aliases
+                for name in self.aliases.keys() {
+                    if name.starts_with(search) {
+                        suggestions.push(name.clone());
+                    }
+                }
+            }
+
+            suggestions.sort();
+            suggestions.dedup();
+            suggestions = suggestions
+                .into_iter()
+                .take(self.config.suggestions_max_items())
+                .collect();
+        } else if !words.is_empty() {
+            // Flags or subcommands
+            let cmd_name = words[0];
+            if let Some(cmd) = self.registry.commands.get(cmd_name) {
+                let last_word = if is_completing_word {
+                    words.last().unwrap_or(&"")
+                } else {
+                    ""
+                };
+
+                if last_word.starts_with("--") {
+                    if self.config.suggestions_long_flags() {
+                        let search = &last_word[2..];
+                        for flag in cmd.flags() {
+                            if flag.name.starts_with(search) {
+                                suggestions.push(format!("--{}", flag.name));
+                            }
+                        }
+                    }
+                } else if last_word.starts_with('-') {
+                    if self.config.suggestions_short_flags() {
+                        let search = &last_word[1..];
+                        for flag in cmd.flags() {
+                            if let Some(s) = flag.short {
+                                if search.is_empty() || s.to_string().starts_with(search) {
+                                    suggestions.push(format!("-{}", s));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            suggestions.sort();
+            suggestions.dedup();
+            // Flag suggestions usually don't need a small limit but we can take 4 or 6.
+            suggestions = suggestions.into_iter().take(6).collect();
+        }
+
+        suggestions
+    }
+
+    fn get_overlay_components(
+        &self,
+        line: &str,
+    ) -> Vec<Box<dyn crate::renderer::overlay::OverlayComponent>> {
+        use crate::renderer::overlay::{SuggestionBox, Tip};
+        let mut components: Vec<Box<dyn crate::renderer::overlay::OverlayComponent>> = Vec::new();
+
+        // 1. !! expansion tip
+        if line.contains("!!") {
+            if self.last_command.is_empty() {
+                components.push(Box::new(Tip {
+                    text: "no previous command".into(),
+                    color_tag: "color_error".into(),
+                }));
+            } else {
+                let expanded = line.replace("!!", &self.last_command);
+                components.push(Box::new(Tip {
+                    text: format!("expands to: {}", expanded),
+                    color_tag: "color_secondary".into(),
+                }));
+            }
+        }
+
+        // 2. Suggestion Box
+        if self.config.suggestions_enabled() {
+            let suggestions = self.get_suggestions(line);
+            if !suggestions.is_empty() {
+                components.push(Box::new(SuggestionBox { items: suggestions }));
+            }
+        }
+
+        // 3. Command/Flag Linter Tips
+        let operators = ["&&", "||", "|", ";", ">>", ">", "<"];
+        let mut last_cmd_start = 0;
+        for op in &operators {
+            if let Some(pos) = line.rfind(op) {
+                if pos + op.len() > last_cmd_start {
+                    last_cmd_start = pos + op.len();
+                }
+            }
+        }
+
+        let current_segment = &line[last_cmd_start..].trim_start();
+        if !current_segment.is_empty() {
+            let words: Vec<String> = current_segment
+                .split_whitespace()
+                .map(|s| s.to_string())
+                .collect();
+            if !words.is_empty() {
+                let cmd_name = &words[0];
+
+                // Check if command exists
+                if self.config.linter_errors_commands() && !self.cmd_exists(cmd_name) {
+                    let builtins: Vec<String> = self.registry.commands.keys().cloned().collect();
+                    let aliases: Vec<String> = self.aliases.keys().cloned().collect();
+
+                    if let Some(suggested) = crate::shell::utils::suggest_commands(
+                        cmd_name,
+                        &builtins,
+                        &aliases,
+                        self.config.corrector_builtins(),
+                        self.config.corrector_system(),
+                    )
+                    .first()
+                    {
+                        components.push(Box::new(Tip {
+                            text: format!("did you mean: {}", suggested),
+                            color_tag: "color_warn".into(),
+                        }));
+                    } else {
+                        components.push(Box::new(Tip {
+                            text: "command not found".into(),
+                            color_tag: "color_error".into(),
+                        }));
+                    }
+                } else if self.config.linter_errors_flags() {
+                    // Check flags via dry_run
+                    if let Some(cmd) = self.registry.commands.get(cmd_name) {
+                        let args_slice = &words[1..];
+                        match cmd.parse_args(args_slice) {
+                            Ok(parsed) => {
+                                if let Err(e) = cmd.dry_run(&self.config, &parsed) {
+                                    components.push(Box::new(Tip {
+                                        text: e,
+                                        color_tag: "color_error".into(),
+                                    }));
+                                }
+                            }
+                            Err(e) => {
+                                components.push(Box::new(Tip {
+                                    text: e,
+                                    color_tag: "color_error".into(),
+                                }));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        components
     }
 }
 
@@ -174,102 +347,31 @@ impl Completer for LunaHelper {
 
 impl Hinter for LunaHelper {
     type Hint = String;
+
     fn hint(&self, line: &str, _pos: usize, _ctx: &Context<'_>) -> Option<String> {
-        let trimmed = line.trim();
-        if !self.config.linter_errors_enabled() || trimmed.is_empty() {
+        if !self.config.linter_errors_enabled() || line.is_empty() {
             return None;
         }
 
-        let layout = self.config.linter_errors_layout();
-        let prefix = if layout == "down" { "\r\n" } else { "   " };
-
-        // 0. Check for !! expansion
-        if line.contains("!!") {
-            if self.last_command.is_empty() {
-                return Some(format!("{}\x1b[2;31m(no previous command)\x1b[0m", prefix));
-            } else {
-                let expanded = line.replace("!!", &self.last_command);
-                return Some(format!(
-                    "{}\x1b[2;32m(expands to: {})\x1b[0m",
-                    prefix, expanded
-                ));
-            }
-        }
-
-        let operators = ["&&", "||", "|", ";", ">>", ">", "<"];
-        let mut last_cmd_start = 0;
-        for op in &operators {
-            if let Some(pos) = line.rfind(op) {
-                if pos + op.len() > last_cmd_start {
-                    last_cmd_start = pos + op.len();
-                }
-            }
-        }
-
-        let current_segment = &line[last_cmd_start..].trim_start();
-        if current_segment.is_empty() {
+        let mut manager = crate::renderer::overlay::OverlayManager::new();
+        let comps = self.get_overlay_components(line);
+        if comps.is_empty() {
             return None;
         }
 
-        let words: Vec<String> = current_segment
-            .split_whitespace()
-            .map(|s| s.to_string())
-            .collect();
-        if words.is_empty() {
-            return None;
+        for comp in comps {
+            manager.add(comp);
         }
 
-        let cmd_name = &words[0];
-        let layout = self.config.linter_errors_layout();
-        let prefix = if layout == "down" { "\r\n" } else { "   " };
-
-        // 1. Check if command exists
-        if self.config.linter_errors_commands() && !self.cmd_exists(cmd_name) {
-            let builtins: Vec<String> = self.registry.commands.keys().cloned().collect();
-            let aliases: Vec<String> = self.aliases.keys().cloned().collect();
-
-            if let Some(suggested) = suggest_commands(
-                cmd_name,
-                &builtins,
-                &aliases,
-                self.config.corrector_builtins(),
-                self.config.corrector_system(),
-            )
-            .first()
-            {
-                return Some(format!(
-                    "{}\x1b[2;33m(did you mean: {})\x1b[0m",
-                    prefix, suggested
-                ));
-            }
-            return Some(format!("{}\x1b[2;31m(command not found)\x1b[0m", prefix));
-        }
-
-        // 2. If it's a builtin, run dry_run
-        if self.config.linter_errors_flags() {
-            if let Some(cmd) = self.registry.commands.get(cmd_name) {
-                let args_slice = &words[1..];
-                match cmd.parse_args(args_slice) {
-                    Ok(parsed) => {
-                        if let Err(e) = cmd.dry_run(&self.config, &parsed) {
-                            return Some(format!("{}\x1b[2;31m({})\x1b[0m", prefix, e));
-                        }
-                    }
-                    Err(e) => {
-                        return Some(format!("{}\x1b[2;31m({})\x1b[0m", prefix, e));
-                    }
-                }
-            }
-        }
-
-        None
+        Some(manager.render_all(line))
     }
 }
 
 use std::borrow::Cow;
 impl Highlighter for LunaHelper {
     fn highlight<'l>(&self, line: &'l str, _pos: usize) -> Cow<'l, str> {
-        Cow::Owned(self.highlighter.highlight(line))
+        let out = self.highlighter.highlight(line);
+        Cow::Owned(out)
     }
     fn highlight_char(&self, _line: &str, _pos: usize, _final: bool) -> bool {
         true

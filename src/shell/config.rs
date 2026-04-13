@@ -39,6 +39,15 @@ pub struct LinterConfig {
 }
 
 #[derive(Serialize, Deserialize, Default, Clone)]
+pub struct SuggestionsConfig {
+    pub enabled: Option<bool>,
+    pub commands: Option<bool>,
+    pub short_flags: Option<bool>,
+    pub long_flags: Option<bool>,
+    pub max_items: Option<usize>,
+}
+
+#[derive(Serialize, Deserialize, Default, Clone)]
 pub struct TabCompleteConfig {
     pub enabled: Option<bool>,
     pub files: Option<bool>,
@@ -101,6 +110,7 @@ pub struct LunaConfig {
     pub corrector: Option<CorrectorConfig>,
     pub linter: Option<LinterConfig>,
     pub tabcomplete: Option<TabCompleteConfig>,
+    pub suggestions: Option<SuggestionsConfig>,
     pub builtin: Option<BuiltinConfig>,
 }
 
@@ -298,6 +308,43 @@ impl LunaConfig {
             .as_ref()
             .and_then(|t| t.commands)
             .unwrap_or(true)
+    }
+
+    // --- Accessors for suggestions ---
+
+    pub fn suggestions_enabled(&self) -> bool {
+        self.suggestions
+            .as_ref()
+            .and_then(|s| s.enabled)
+            .unwrap_or(true)
+    }
+
+    pub fn suggestions_commands(&self) -> bool {
+        self.suggestions
+            .as_ref()
+            .and_then(|s| s.commands)
+            .unwrap_or(true)
+    }
+
+    pub fn suggestions_short_flags(&self) -> bool {
+        self.suggestions
+            .as_ref()
+            .and_then(|s| s.short_flags)
+            .unwrap_or(true)
+    }
+
+    pub fn suggestions_long_flags(&self) -> bool {
+        self.suggestions
+            .as_ref()
+            .and_then(|s| s.long_flags)
+            .unwrap_or(true)
+    }
+
+    pub fn suggestions_max_items(&self) -> usize {
+        self.suggestions
+            .as_ref()
+            .and_then(|s| s.max_items)
+            .unwrap_or(4)
     }
 
     pub fn tabcomplete_flags(&self) -> bool {
