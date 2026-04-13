@@ -17,6 +17,7 @@ pub struct LunaHelper {
     pub aliases: HashMap<String, String>,
     pub highlighter: SyntaxHighlighter,
     pub last_command: String,
+    pub available_lines: usize,
 }
 
 impl LunaHelper {
@@ -33,6 +34,7 @@ impl LunaHelper {
             aliases,
             highlighter,
             last_command: String::new(),
+            available_lines: 100, // Def safe value
         }
     }
 
@@ -71,6 +73,22 @@ impl LunaHelper {
                 for name in self.aliases.keys() {
                     if name.starts_with(search) {
                         suggestions.push(name.clone());
+                    }
+                }
+            }
+            if self.config.suggestions_system() {
+                let search = words.first().unwrap_or(&"");
+                if let Ok(path_env) = std::env::var("PATH") {
+                    for dir in path_env.split(':') {
+                        if let Ok(entries) = std::fs::read_dir(dir) {
+                            for entry in entries.flatten() {
+                                if let Ok(name) = entry.file_name().into_string() {
+                                    if name.starts_with(search) {
+                                        suggestions.push(name);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -148,9 +166,17 @@ impl LunaHelper {
 
         // 2. Suggestion Box
         if self.config.suggestions_enabled() {
-            let suggestions = self.get_suggestions(line);
-            if !suggestions.is_empty() {
-                components.push(Box::new(SuggestionBox { items: suggestions }));
+            let free_lines = self.available_lines.saturating_sub(1);
+            if free_lines >= 3 {
+                let mut suggestions = self.get_suggestions(line);
+                let max_items = free_lines - 2;
+                if suggestions.len() > max_items {
+                    suggestions.truncate(max_items);
+                }
+
+                if !suggestions.is_empty() {
+                    components.push(Box::new(SuggestionBox { items: suggestions }));
+                }
             }
         }
 

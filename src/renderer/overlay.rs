@@ -1,5 +1,5 @@
 use crate::renderer::markup;
-use crossterm::{cursor, terminal};
+use crossterm::terminal;
 
 pub struct OverlayContext {
     pub _term_width: u16,
@@ -12,7 +12,6 @@ pub struct OverlayContext {
 impl OverlayContext {
     pub fn new(line: &str) -> Self {
         let (term_width, term_height) = terminal::size().unwrap_or((80, 23));
-        let (cursor_x, cursor_y) = cursor::position().unwrap_or((0, 0));
         let prompt_height = if line.contains('\n') {
             line.split('\n').count()
         } else {
@@ -22,8 +21,8 @@ impl OverlayContext {
         Self {
             _term_width: term_width,
             _term_height: term_height,
-            _cursor_x: cursor_x,
-            _cursor_y: cursor_y,
+            _cursor_x: 0,
+            _cursor_y: 0,
             _prompt_height: prompt_height,
         }
     }
@@ -53,7 +52,19 @@ impl OverlayComponent for SuggestionBox {
             return String::new();
         }
 
-        let max_item_len = self.items.iter().map(|s| s.len()).max().unwrap_or(0);
+        let term_w = _ctx._term_width as usize;
+        let max_box_width = term_w.saturating_sub(4);
+
+        // Truncate items if they are too long for the terminal
+        let mut items = self.items.clone();
+        for item in &mut items {
+            if item.len() > max_box_width.saturating_sub(6) {
+                item.truncate(max_box_width.saturating_sub(9));
+                item.push_str("...");
+            }
+        }
+
+        let max_item_len = items.iter().map(|s| s.len()).max().unwrap_or(0);
         let width = max_item_len + 4;
 
         let mut out = String::new();
@@ -68,12 +79,12 @@ impl OverlayComponent for SuggestionBox {
         }
         box_markup.push_str("┐</color_border>\r\n");
 
-        for item in &self.items {
+        for item in &items {
             box_markup.push_str("<color_border>│</color_border> ");
             box_markup.push_str("<color_secondary>");
             box_markup.push_str(item);
             box_markup.push_str("</color_secondary>");
-            let padding = width - item.len() - 1;
+            let padding = width.saturating_sub(item.len()).saturating_sub(1);
             for _ in 0..padding {
                 box_markup.push(' ');
             }

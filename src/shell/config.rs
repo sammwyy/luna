@@ -42,6 +42,8 @@ pub struct LinterConfig {
 pub struct SuggestionsConfig {
     pub enabled: Option<bool>,
     pub commands: Option<bool>,
+    pub system: Option<bool>,
+
     pub short_flags: Option<bool>,
     pub long_flags: Option<bool>,
     pub max_items: Option<usize>,
@@ -323,6 +325,13 @@ impl LunaConfig {
         self.suggestions
             .as_ref()
             .and_then(|s| s.commands)
+            .unwrap_or(true)
+    }
+
+    pub fn suggestions_system(&self) -> bool {
+        self.suggestions
+            .as_ref()
+            .and_then(|s| s.system)
             .unwrap_or(true)
     }
 

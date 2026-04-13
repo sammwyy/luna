@@ -130,6 +130,23 @@ impl Luna {
             // Sync last command to helper for !! expansion preview
             if let Some(h) = rl.helper_mut() {
                 h.last_command = self.shell.context.state.last_command.clone();
+                if let Ok((cols, rows)) = crossterm::terminal::size() {
+                    if let Ok((_, cur_y)) = crossterm::cursor::position() {
+                        // Calculate prompt lines (minimum lines + wrapped lines)
+                        let raw_prompt = crate::renderer::markup::strip_ansi(&prompt);
+                        let prompt_lines = raw_prompt.lines().count();
+                        let prompt_wrap = (raw_prompt.len() as u16) / cols;
+                        let total_prompt_h = (prompt_lines as u16 + prompt_wrap).saturating_sub(1);
+
+                        let prompt_y = cur_y + total_prompt_h;
+
+                        h.available_lines = if rows > prompt_y {
+                            (rows - prompt_y) as usize
+                        } else {
+                            0
+                        };
+                    }
+                }
             }
 
             match rl.readline(&prompt) {

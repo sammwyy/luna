@@ -40,13 +40,14 @@ files = true    # enable file completion
 commands = true # enable command completion
 flags = true    # enable flag completion
 
-# Suggestion box settings
+# Suggestion box settings (WIP)
 [suggestions]
-enabled = true
+enabled = false
 commands = true # Suggest commands
+system = true # Suggest system commands
 short_flags = true # Suggest short flags
 long_flags = true # Suggest long flags
-max_items = 4 # maximum number of commands to suggest
+max_items = 5 # maximum number of commands to suggest
 
 # Built-in commands global settings
 [builtin]
